@@ -1,0 +1,35 @@
+{
+  "name": "dsh-plugin-scout",
+  "version": "0.1.0",
+  "description": "Find DeepSeek Harness plugins and check peer-range compatibility with the running dsh runtime.",
+  "type": "module",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "repository": { "type": "git", "url": "git+https://github.com/cosmic-doughnuts/dsh-plugin-scout.git" },
+  "keywords": ["deepseek", "harness", "dsh", "dsh-plugin", "search", "discovery", "compatibility"],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test \"test/**/*.test.mjs\"",
+    "test:live": "node --test test/live/smoke.test.mjs",
+    "check": "npm run typecheck && npm run build"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-tools": "^0.2.0-rc.2"
+  },
+  "dsh": { "bundle": { "patch": "./cordis.patch.yml" } },
+  "exports": {
+    ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": ["lib", "src", "cordis.patch.yml", "README.md", "LICENSE"],
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0",
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-tools": "^0.2.0-rc.2"
+  }
+}
