@@ -82,20 +82,6 @@ async function resolveGitHubToken(ctx: Context): Promise<string | undefined> {
   }
 }
 
-/** Bounded-concurrency map helper. */
-async function mapLimited<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
-  const out: R[] = new Array(items.length)
-  let next = 0
-  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (next < items.length) {
-      const i = next++
-      out[i] = await fn(items[i])
-    }
-  })
-  await Promise.all(workers)
-  return out
-}
-
 export function apply(ctx: Context): void {
   ctx.tools.register(defineTool({
     name: 'find_dsh_plugin',
@@ -153,13 +139,11 @@ export function apply(ctx: Context): void {
       if (githubError === null) {
         const runtime: RuntimeVersions = runtimeOverride ?? await resolveRuntimeVersions()
         const notBundles: string[] = []
-        const metas = await mapLimited(found.slice(0, limit * 2), 4, repo =>
-          fetchCandidateMetadata(repo, { signal }).catch(() => undefined))
 
         const results: FindItem[] = []
         for (let i = 0; i < found.length && results.length < limit; i++) {
           const repo = found[i]
-          const meta = metas[i]
+          const meta = await fetchCandidateMetadata(repo, { signal }).catch(() => undefined)
           if (meta === undefined) {
             // metadata unreachable — still report, as unknown
             results.push({

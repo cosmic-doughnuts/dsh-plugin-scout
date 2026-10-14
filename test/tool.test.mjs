@@ -20,6 +20,7 @@ const PKGS = {
   'a/dsh-plugin-one': repoPkg('dsh-plugin-one', { '@deepseek-ai/dsh-tools': '^0.2.0-rc.2' }),
   'b/dsh-plugin-two': repoPkg('dsh-plugin-two', { '@deepseek-ai/dsh-tools': '^0.1.0-rc.6' }),
   'c/not-a-plugin': repoPkg('some-app', { react: '^18' }, false),
+  'd/another-app': repoPkg('another-app', { vue: '^3' }, false),
 }
 
 const npmMeta = (name) => ({ 'dist-tags': { latest: '1.0.0' }, versions: { '1.0.0': {} } })
@@ -93,6 +94,29 @@ test('GitHub rate limit degrades to curated fallback with a note', async () => {
   const out = await tool.execute({ query: 'anything' })
   assert.ok(out.note.toLowerCase().includes('fall'), `note was: ${out.note}`)
   assert.deepEqual(out.results, [])
+})
+
+test('non-bundles ahead of the prefetch window never masquerade as results', async () => {
+  // two non-bundle repos ranked above the real plugin, limit 1: the old
+  // prefetch window (limit*2 = 2) missed the plugin's metadata and pushed it
+  // as an "unknown, metadata unreachable" result.
+  const ordered = {
+    items: [
+      { full_name: 'c/not-a-plugin', stargazers_count: 50, html_url: 'https://github.com/c/not-a-plugin', description: 'big app' },
+      { full_name: 'd/another-app', stargazers_count: 40, html_url: 'https://github.com/d/another-app', description: 'bigger app' },
+      { full_name: 'a/dsh-plugin-one', stargazers_count: 30, html_url: 'https://github.com/a/dsh-plugin-one', description: 'plugin one' },
+    ],
+  }
+  const f = async (url) => {
+    if (url.includes('api.github.com/search')) return { ok: true, status: 200, json: async () => ordered }
+    return fixtureFetch()(url)
+  }
+  ghFetch(f); compatFetch(f); regFetch(fixtureFetch())
+  const out = await tool.execute({ query: 'app', limit: 1 })
+  assert.equal(out.results.length, 1)
+  assert.equal(out.results[0].name, 'dsh-plugin-one')
+  assert.equal(out.results[0].verdict.status, 'compatible')
+  assert.equal(out.notBundles.length, 2)
 })
 
 test('render includes install guidance and the third-party-code warning', async () => {

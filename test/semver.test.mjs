@@ -15,7 +15,11 @@ test('satisfies table', () => {
     ['0.2.0-rc.2', '0.2.0-rc.2', true],
     ['0.2.0-rc.3', '^0.2.0-rc.2', true],       // prerelease above floor, same 0.2.x
     ['0.2.0', '^0.2.0-rc.2', true],            // release beats its own prerelease
-    ['0.2.5-rc.1', '^0.2.0-rc.2', true],
+    // cross-patch prereleases match only same-tuple comparators (strict
+    // semver): definitively not satisfied
+    ['0.2.5-rc.1', '^0.2.0-rc.2', false],
+    ['0.2.5-rc.1', '^0.2.1', false],
+    ['0.1.9-rc.1', '^0.1.7-alpha.1', false],
     ['0.3.0', '^0.2.0-rc.2', false],
     ['0.1.9', '^0.2.0-rc.2', false],
     ['0.2.0-rc.1', '^0.2.0-rc.2', false],

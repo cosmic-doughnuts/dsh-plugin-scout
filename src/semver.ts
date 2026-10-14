@@ -49,6 +49,12 @@ function satisfiesAtom(v: Version, atom: string): boolean | undefined {
   }
   const base = parseVersion(atom.slice(1))
   if (!base) return undefined
+  // A prerelease only matches a comparator sharing its [major,minor,patch]
+  // tuple (strict semver): cross-tuple prerelease atoms are definitively
+  // not satisfied, which keeps verdicts exact rather than guessed.
+  if (v.pre.length > 0 && (v.major !== base.major || v.minor !== base.minor || v.patch !== base.patch)) {
+    return false
+  }
   // Compare against the ceiling by release tuple only: a prerelease of the
   // ceiling version (e.g. 0.2.0-rc.2 vs ^0.1.x, ceiling 0.2.0) is excluded.
   return compare(v, base) >= 0 && compare({ ...v, pre: [] }, caretCeiling(base)) < 0
