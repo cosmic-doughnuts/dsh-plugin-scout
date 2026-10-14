@@ -31,6 +31,19 @@ test('unknown when a declared runtime package has no known runtime version', () 
   assert.equal(evaluatePlugin({ '@deepseek-ai/dsh-settings': '^9' }, RT).status, 'unknown')
 })
 
+test('peer on an unresolvable @deepseek-ai package says runtime version unknown, not "no peer declared"', () => {
+  const v = evaluatePlugin({ '@deepseek-ai/dsh-client-ui': '^1' }, RT)
+  assert.equal(v.status, 'unknown')
+  assert.ok(v.reasons.some(r => r.includes('runtime version unknown') && r.includes('dsh-client-ui')), JSON.stringify(v.reasons))
+  assert.ok(!v.reasons.includes('no DSH runtime peer declared'))
+})
+
+test('non-DSH peers only still say no DSH runtime peer declared', () => {
+  const v = evaluatePlugin({ react: '^18', lodash: '^4' }, RT)
+  assert.equal(v.status, 'unknown')
+  assert.deepEqual(v.reasons, ['no DSH runtime peer declared'])
+})
+
 const PKG = JSON.stringify({ name: 'dsh-example', version: '1.2.0',
   peerDependencies: { '@deepseek-ai/dsh-tools': '^0.2.0-rc.2' }, dsh: { bundle: { patch: './cordis.patch.yml' } } })
 

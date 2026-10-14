@@ -37,7 +37,15 @@ const RUNTIME_PACKAGES = ['@deepseek-ai/cordis', '@deepseek-ai/dsh-tools', '@dee
 export function evaluatePlugin(peers: Record<string, string> | undefined, runtime: RuntimeVersions): Verdict {
   if (peers === undefined || peers === null) return { status: 'unknown', reasons: ['no peerDependencies declared'] }
   const overlapping = Object.keys(peers).filter(k => k in runtime)
-  if (overlapping.length === 0) return { status: 'unknown', reasons: ['no DSH runtime peer declared'] }
+  if (overlapping.length === 0) {
+    // A peer on a @deepseek-ai package we could not resolve a runtime version
+    // for is a different situation from having no DSH peers at all.
+    const unresolved = Object.keys(peers).filter(k => k.startsWith('@deepseek-ai/'))
+    if (unresolved.length > 0) {
+      return { status: 'unknown', reasons: [`runtime version unknown for: ${unresolved.join(', ')}`] }
+    }
+    return { status: 'unknown', reasons: ['no DSH runtime peer declared'] }
+  }
 
   const reasons: string[] = []
   let incompatible = false
